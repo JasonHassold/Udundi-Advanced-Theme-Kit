@@ -1,0 +1,78 @@
+#!/bin/bash
+
+usage() {
+  echo "Usage: advtheme {command} {options}"
+  echo
+  echo " Commands:"
+  echo
+  echo "   branch {branch name}"
+}
+
+# $2 branch name
+branch() {
+  name=$2
+
+  git checkout master
+  store=$(cat config.yml | grep store | cut -d ' ' -f 4)
+  pass=$(cat config.yml | grep password | cut -d ' ' -f 4)
+  theme_id=$(cat config.yml | grep theme_id | cut -d '"' -f 2)
+  current_theme_name=$(theme get --list -s=$store -p=$pass | grep $theme_id | cut -d ']' -f 3 | cut -c 2-)
+  new_theme_name="$current_theme_name - $name"
+
+  if [ "$3" == 'delete' ]; then
+    git branch -D $name
+    git push origin --delete $name
+    read -r -p "Removed branch theme '$new_theme_name' confirm: " response
+  else
+    git branch "$name"
+    if [ $? -eq 0 ]; then
+      echo "Created branch $name"
+      git checkout "$name"
+
+      mkdir temptheme
+      cd temptheme
+      echo "Moved to /temptheme folder"
+
+      theme new --name="$new_theme_name" -s=$store -p=$pass
+      wait
+      # BACK_PID=$! # get theme new PID
+      # while kill -0 $BACK_PID ; do
+      #   echo "Process is still active..."
+      #   sleep 1
+      #   # You can add a timeout here if you want
+      # done
+      new_theme_id=$(cat config.yml | grep theme_id | cut -d '"' -f 2)
+
+      cd ..
+      cp temptheme/config.yml config.yml
+      rm -r temptheme/
+
+      git add *
+      git commit -m "Created new theme branch '$new_theme_name'"
+      git push --set-upstream origin "$name"
+
+      theme deploy
+    fi
+  fi
+}
+
+watch() {
+  git pull
+  theme watch
+  wait
+  git add *
+  read -r -p "Commit message: " message
+  git commit -m "$message"
+  git push
+}
+
+
+case $1 in
+  -h | --help) usage ;;
+  branch)
+    branch "$@"
+    ;;
+  watch)
+    watch "$@"
+    ;;
+esac
