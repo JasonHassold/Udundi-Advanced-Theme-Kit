@@ -5,7 +5,31 @@ usage() {
   echo
   echo " Commands:"
   echo
-  echo "   branch {branch name}"
+  echo "   Setup: setup {store ex. advanced-theme-kit-tester.myshopify.com} {password}"
+  echo
+  echo "   Create Branch: branch {branch name}"
+  echo "   Delete Branch: branch {branch name} delete"
+  echo
+  echo "   Watch: watch"
+  echo
+  echo "   Merge: merge {branch to merge into} {branch being merged}"
+}
+
+setup() {
+  theme get --list -s=$2 -p=$3
+  read -r -p "Theme id (master branch): " theme_id
+  theme get -t=$theme_id -s=$2 -p=$3
+  wait
+  git init
+  echo "config.yml" >> .gitignore
+  git add .gitignore
+  git add * -f
+  git commit -m "Initialized"
+  read -r -p "Github username: " git_user
+  read -r -p "New repo name: " repo_name
+  git remote add origin https://github.com/$git_user/$(echo $repo_name | tr ' ' '-').git
+  read -r -p "Add repository on github with the same name... " response
+  git push -u origin masterthem
 }
 
 # $2 branch name
@@ -41,7 +65,7 @@ branch() {
       #   sleep 1
       #   # You can add a timeout here if you want
       # done
-      new_theme_id=$(cat config.yml | grep theme_id | cut -d '"' -f 2)
+      #new_theme_id=$(cat config.yml | grep theme_id | cut -d '"' -f 2)
 
       cd ..
       cp temptheme/config.yml config.yml
@@ -66,13 +90,40 @@ watch() {
   git push
 }
 
+merge() {
+  git checkout $2
+  if git merge $3 | grep -q 'fix conflicts'; then
+    read -r -p "Continue once you fix conflicts... " response
+  fi
+  git add *
+  status=$(git status)
+  files=$(echo $status | grep 'modified\|new file' | rev | cut -d " " -f 1 | rev)
+  deleted_files=$(echo $status | grep 'deleted' | rev | cut -d " " -f 1 | rev)
+  read -r -p "Commit message: " message
+  git commit -m "$message"
+  git push
+  #theme deploy
+  for file in $files; do
+    theme deploy $file
+  done
+  for file in $deleted_files; do
+    theme remove $files
+  done
+}
+
 
 case $1 in
   -h | --help) usage ;;
+  setup)
+    setup "$@"
+    ;;
   branch)
     branch "$@"
     ;;
   watch)
     watch "$@"
+    ;;
+  merge)
+    merge "$@"
     ;;
 esac
