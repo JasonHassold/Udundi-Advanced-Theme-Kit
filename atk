@@ -10,6 +10,8 @@ usage() {
   echo "   Create Branch: branch {branch name}"
   echo "   Delete Branch: branch {branch name} delete"
   echo
+  echo "   Switch Branch: switch {branch name}"
+  echo
   echo "   Watch: watch"
   echo
   echo "   Merge: merge {branch to merge into} {branch being merged}"
