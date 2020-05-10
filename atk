@@ -1,7 +1,7 @@
 #!/bin/bash
 
 usage() {
-  echo "Usage: advtheme {command} {options}"
+  echo "Usage: atk {command} {options}"
   echo
   echo " Commands:"
   echo
@@ -24,9 +24,9 @@ setup() {
   git init
 
   echo 'config.yml' > .gitignore
-  echo 'advtheme.conf' >> .gitignore
+  echo 'atk.conf' >> .gitignore
 
-  echo "master=$theme_id" > advtheme.conf
+  echo "master=$theme_id" > atk.conf
 
   git add *
   git commit -m "Initialized"
@@ -69,7 +69,7 @@ branch() {
       new_theme_id=$(cat config.yml | grep theme_id | cut -d '"' -f 2)
       cd ..
       rm -r temptheme/
-      echo "$name=$new_theme_id" >> advtheme.conf
+      echo "$name=$new_theme_id" >> atk.conf
       ed -i "s/$theme_id/$new_theme_id/g" config.yml
       sed -i "s/$theme_id/$new_theme_id/g" config.yml
       # cd ..
@@ -88,8 +88,8 @@ branch() {
 switch() {
   current_branch=$(git branch | grep '*' | cut -d ' ' -f 2)
   new_branch=$2
-  current_branch_id=$(cat advtheme.conf | grep $current_branch | cut -d '=' -f 2)
-  new_branch_id=$(cat advtheme.conf | grep $new_branch | cut -d '=' -f 2)
+  current_branch_id=$(cat atk.conf | grep $current_branch | cut -d '=' -f 2)
+  new_branch_id=$(cat atk.conf | grep $new_branch | cut -d '=' -f 2)
   git checkout $new_branch
   if [ "$current_branch" != "$new_branch" ]; then
     sed -i "s/$current_branch_id/$new_branch_id/g" config.yml
@@ -120,7 +120,8 @@ merge() {
   read -r -p "Commit message: " message
   git commit -m "$message"
   git push
-  # #theme deploy
+
+  theme deploy
   # for file in $added_modified_files; do
   #   echo "Added/Modified $file"
   #   theme deploy $file
