@@ -25,6 +25,7 @@ setup() {
 
   echo 'config.yml' > .gitignore
   echo 'atk.conf' >> .gitignore
+  echo '.gitignore' >> .gitignore
 
   echo "master=$theme_id" > atk.conf
 
@@ -109,19 +110,29 @@ watch() {
 
 merge() {
   switch "$@"
+  echo "WAIT FOR ALL CHANGES -> CTRL+C -> Q" > merge.log
+  theme watch >> merge.log 2>&1 &
+  theme_watch_PID=$!
+  sleep 5
   if git merge $3 | grep -q 'fix conflicts'; then
     read -r -p "Continue once you fix conflicts... " response
   fi
-  git add *
+  # tail -f merge.log
+  #while cat; do sleep 1; done < merge.log
+  less +F merge.log
+  rm merge.log
+  # git add *
+
   # renamed_added_files=$(git status | grep 'renamed' | rev | cut -d " " -f 1 | rev)
   # renamed_deleted_files=$(git status | grep 'renamed' | rev | cut -d ">" -f 2 | cut -d ' ' -f 2 | rev)
   # added_modified_files="$(git status | grep 'modified\|new file' | rev | cut -d " " -f 1 | rev) $renamed_added_files"
   # deleted_files="$(git status | grep 'deleted' | rev | cut -d " " -f 1 | rev) $renamed_deleted_files"
-  read -r -p "Commit message: " message
-  git commit -m "$message"
+
+  # read -r -p "Commit message (wait for theme watch): " message
+  # git commit -m "$message"
   git push
 
-  theme deploy
+
   # for file in $added_modified_files; do
   #   echo "Added/Modified $file"
   #   theme deploy $file
