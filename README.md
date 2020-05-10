@@ -6,19 +6,19 @@
 sudo ln -s {{ full current directory }}/atk /usr/bin/atk
 ```
 
-### Usage
+### Usage: 
 
-Usage: advtheme {command} {options}
+```atk {command} {options}```
 
- Commands:
+### Commands:
 
-   Setup: setup {store ex. advanced-theme-kit-tester.myshopify.com} {password}
+   * **Setup:** ```atk setup {store ex. advanced-theme-kit-tester.myshopify.com} {password}```
 
-   Create Branch: branch {branch name}
-   Delete Branch: branch {branch name} delete
+   * **Create Branch:** ```atk branch {branch name}```
+   * **Delete Branch:** ```atk branch {branch name} delete```
 
-   Switch Branch: switch {branch name}
+   * **Switch Branch:** ```atk switch {branch name}```
 
-   Watch: watch
+   * **Watch:** ```atk watch```
 
-   Merge: merge {branch to merge into} {branch being merged}
+   * **Merge:** ```atk merge {branch to merge into} {branch being merged}```
