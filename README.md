@@ -3,7 +3,7 @@
 ### Setup
 
 ```
-sudo ln -s {{ full current directory }}/advtheme /usr/bin/advtheme
+sudo ln -s {{ full current directory }}/atk /usr/bin/atk
 ```
 
 ### Usage
@@ -16,6 +16,8 @@ Usage: advtheme {command} {options}
 
    Create Branch: branch {branch name}
    Delete Branch: branch {branch name} delete
+
+   Switch Branch: switch {branch name}
 
    Watch: watch
 
