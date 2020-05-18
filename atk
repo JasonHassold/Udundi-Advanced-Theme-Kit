@@ -6,7 +6,7 @@ usage() {
   echo " Commands:"
   echo
   echo -e "   \e[33mSetup\e[39m: \e[96msetup\e[39m {store ex. advanced-theme-kit-tester.myshopify.com} {password}"
-  echo -e "      \e[90m-downloads a selected theme and sets up github repository\e[39m"
+  echo -e "      \e[90m-downloads live theme and sets up github repository with the live theme as the master branch\e[39m"
   echo
   echo -e "   \e[33mGet\e[39m: \e[96mget\e[39m {github repo URL} {store ex. advanced-theme-kit-tester.myshopify.com} {password}"
   echo -e "      \e[90m-gets an existing repository\e[39m"
@@ -24,9 +24,14 @@ usage() {
 }
 
 setup() {
-  theme get --list -s=$2 -p=$3
-  read -r -p "Theme id (master branch): " theme_id
-  theme get -t=$theme_id -s=$2 -p=$3
+  read -r -p "Folder name: " folder
+  mkdir $folder
+  cd $folder
+
+  theme_list=$(theme get --list -s="$2" -p="$3")
+  master_theme_id=$(echo $theme_list | grep "[live]" | cut -d ']' -f 1 | cut -d '[' -f 2)
+  #read -r -p "Theme id (master branch): " theme_id
+  theme get -t=$master_theme_id -s="$2" -p="$3"
   wait
 
   git init
@@ -35,7 +40,7 @@ setup() {
   echo 'atk.conf' >> .gitignore
   echo '.gitignore' >> .gitignore
 
-  echo "master=$theme_id" > atk.conf
+  echo "master=$master_theme_id" > atk.conf
 
   git add *
   git commit -m "Initialized"
@@ -43,7 +48,7 @@ setup() {
   read -r -p "Github username: " git_user
   read -r -p "New repo name: " repo_name
   git remote add origin https://github.com/$git_user/$(echo $repo_name | tr ' ' '-').git
-  read -r -p "Add repository on github with the same name... " response
+  read -r -p "Add repository on github with the same name (press any key when done)... " response
   git push -u origin master
 }
 
@@ -164,8 +169,10 @@ merge() {
 }
 
 
-case $1 in
-  -h | --help | help) usage ;;
+case "$1" in
+  -h | --help | help)
+    usage
+    ;;
   setup)
     setup "$@"
     ;;
