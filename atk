@@ -61,6 +61,7 @@ setup() {
 }
 
 
+# Used by get() and sync()
 initBranchTracking() {
   # Add tracking for other branches
   # Add branch theme IDs to atk.conf
@@ -218,7 +219,7 @@ watch() {
   # Wait until user cancels because theme watch runs as a background process
   wait
   # If changes have been made
-  if [[ $(git status) != *"Your branch is up to date with"* ]]; then
+  if [[ ! $(git status) == *"nothing to commit"* ]]; then
     # Add all changes, commit, and push
     git add *
     echo
