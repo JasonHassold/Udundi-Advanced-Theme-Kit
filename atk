@@ -260,9 +260,9 @@ merge() {
     read -r -p "Continue once you fix conflicts... " response
   fi
 
-  theme deploy
-
   git push
+
+  theme deploy
 }
 
 
