@@ -233,6 +233,8 @@ switch() {
 watch() {
   # Pull any changes
   git pull
+  # Provides link to preview
+  theme open
   # Use theme watch to update theme with any changes changes
   theme watch
   # Wait until user cancels because theme watch runs as a background process
