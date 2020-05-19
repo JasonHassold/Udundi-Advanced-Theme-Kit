@@ -210,12 +210,15 @@ watch() {
   theme watch
   # Wait until user cancels because theme watch runs as a background process
   wait
-  # Add all changes, commit, and push
-  git add *
-  echo
-  read -r -p "Commit message: " message
-  git commit -m "$message"
-  git push
+  # If changes have been made
+  if [[ $(git status) != *"Your branch is up to date with"* ]]; then
+    # Add all changes, commit, and push
+    git add *
+    echo
+    read -r -p "Commit message: " message
+    git commit -m "$message"
+    git push
+  fi
 }
 
 
