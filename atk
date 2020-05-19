@@ -26,77 +26,49 @@ usage() {
   echo
 }
 
+
 setup() {
+  # Create folder and move into it
   read -r -p "Folder name: " folder
   mkdir $folder
   cd $folder
 
+  # Get live theme
   theme_list=$(theme get --list -s="$2" -p="$3")
   master_theme_id=$(echo $theme_list | grep "\[live\]" | cut -d ']' -f 1 | cut -d '[' -f 2)
-  #read -r -p "Theme id (master branch): " theme_id
   theme get -t=$master_theme_id -s="$2" -p="$3"
   wait
 
+  # Initialize repo
   git init
 
+  # Create .gitignore
   echo 'config.yml' > .gitignore
   echo 'atk.conf' >> .gitignore
   echo '.gitignore' >> .gitignore
 
+  # Create atk.conf - this file is used to store branch theme IDs
   echo "master=$master_theme_id" > atk.conf
 
+  # Create remote repo and push all changes
   git add *
   git commit -m "Initialized"
-
-  read -r -p "Github username: " git_user
+  read -r -p "Github username or org: " git_user
   read -r -p "New repo name: " repo_name
   git remote add origin https://github.com/$git_user/$(echo $repo_name | tr ' ' '-').git
   read -r -p "Add repository on github with the same name (press any key when done)... " response
   git push -u origin master
 }
 
-get() {
-  git clone $2
 
-  cd $(echo $2 | rev | cut -d '/' -f 1 | rev | cut -d '.' -f 1)
-
-  for branch in $(git branch --all | grep '^\s*remotes' | egrep --invert-match '(:?HEAD|master)$'); do
-    git branch --track "${branch##*/}" "$branch"
-  done
-
-  echo 'config.yml' > .gitignore
-  echo 'atk.conf' >> .gitignore
-  echo '.gitignore' >> .gitignore
-
-  theme_list=$(theme get --list -s=$3 -p=$4)
-  mater_theme_name=$(echo $theme_list | grep "\[live\]" | rev | cut -d ']' -f 1 | rev)
-  master_theme_id=$(echo $theme_list | grep "\[live\]" | cut -d ']' -f 1 | cut -d '[' -f 2)
-
-  echo "master=$master_theme_id" > atk.conf
-
-  git branch | while read line; do
-    branch_name=$(echo "$line" | rev | cut -d ' ' -f 1 | rev | xargs)
-    branch_theme_name="$master_theme_name - $branch_name"
-    if [ "$(echo $branch_name)" != "master" ]; then
-      id=$(echo "$theme_list" | grep "$branch_theme_name"  | cut -d ']' -f 1 | cut -d '[' -f 2)
-      echo "$branch_name=$id" >> atk.conf
-    fi
-  done
-
-  theme configure -s=$3 -p=$4 -t=$master_theme_id
-}
-
-sync() {
-  switch _ master
-
-  git pull
-
+initBranchTracking() {
+  # Add tracking for other branches
+  # Add branch theme IDs to atk.conf
   local_branches=$(git branch --all -vv | grep -v "master" | grep -v "remotes" | cut -d ' ' -f 3)
   remote_branches=$(git branch --all -vv | grep -v "master" | grep  "remotes" | cut -d ' ' -f 3 | cut -d '/' -f 3)
 
   store=$(cat config.yml | grep "store" | cut -d ' ' -f 4)
   pass=$(cat config.yml | grep "password" | cut -d ' ' -f 4)
-
   theme_list=$(theme get --list -s="$store" -p="$pass")
   mater_theme_name=$(echo $theme_list | grep "\[live\]" | rev | cut -d ']' -f 1 | rev)
 
@@ -112,44 +84,92 @@ sync() {
   done
 }
 
+
+get() {
+  # Clone theme repo
+  git clone $2
+
+  # Move into new repo folder
+  cd $(echo $2 | rev | cut -d '/' -f 1 | rev | cut -d '.' -f 1)
+
+  # Create .gitignore
+  echo 'config.yml' > .gitignore
+  echo 'atk.conf' >> .gitignore
+  echo '.gitignore' >> .gitignore
+
+  # Get master theme name and id
+  theme_list=$(theme get --list -s=$3 -p=$4)
+  mater_theme_name=$(echo $theme_list | grep "\[live\]" | rev | cut -d ']' -f 1 | rev)
+  master_theme_id=$(echo $theme_list | grep "\[live\]" | cut -d ']' -f 1 | cut -d '[' -f 2)
+
+  # Create atk.conf - this file is used to store branch theme IDs
+  echo "master=$master_theme_id" > atk.conf
+
+  # Set up config file for master theme
+  theme configure -s=$3 -p=$4 -t=$master_theme_id
+
+  initBranchTracking
+}
+
+
+sync() {
+  switch _ master
+
+  git pull
+
+  initBranchTracking
+}
+
+
 branch() {
+  # If no branch arguments
   if [ $# == 1 ]; then
+    # List branches
     git branch
   else
     name=$2
 
-    git checkout master
+    switch _ master
+
+    # Get master theme name and generate new branch theme name
     store=$(cat config.yml | grep store | cut -d ' ' -f 4)
     pass=$(cat config.yml | grep password | cut -d ' ' -f 4)
     theme_id=$(cat config.yml | grep theme_id | cut -d '"' -f 2)
-    current_theme_name=$(theme get --list -s=$store -p=$pass | grep $theme_id | cut -d ']' -f 3 | cut -c 2-)
-    new_theme_name="$current_theme_name - $name"
+    master_theme_name=$(theme get --list -s=$store -p=$pass | grep $theme_id | cut -d ']' -f 3 | cut -c 2-)
+    new_theme_name="$master_theme_name - $name"
 
     if [ "$3" == 'delete' ]; then
+      # Delete local branch
       git branch -D $name
+      # Delete remote branch
       git push origin --delete $name
+      # Remove atk.conf branch line
       sed "/$name=/d" atk.conf
-      read -r -p "Removed branch theme '$new_theme_name' confirm: " response
+      # Prompts user to delete theme
+      read -r -p "Removed branch theme '$new_theme_name' (press any key to confirm)... " response
     else
+      # Create git branch
       git branch "$name"
+      # If not error
       if [ $? -eq 0 ]; then
-        echo "Created branch $name"
-        git checkout $name
-
+        # Make temp folder and move into it
         mkdir temptheme
         cd temptheme
-        echo "Moved to /temptheme folder"
 
+        # Generate new theme in folder
         theme new --name="$new_theme_name" -s=$store -p=$pass
         wait
 
+        # Get new theme ID and remove temp theme folder
         new_theme_id=$(cat config.yml | grep theme_id | cut -d '"' -f 2)
         cd ..
         rm -r temptheme/
-        echo "$name=$new_theme_id" >> atk.conf
-        ed -i "s/$theme_id/$new_theme_id/g" config.yml
-        sed -i "s/$theme_id/$new_theme_id/g" config.yml
 
+        # Add new branch theme ID to atk.conf and switch
+        echo "$name=$new_theme_id" >> atk.conf
+        switch _ $name
+
+        # Create/Push remote branch
         git add *
         git commit -m "Created new theme branch '$new_theme_name'"
         git push --set-upstream origin "$name"
@@ -160,24 +180,37 @@ branch() {
   fi
 }
 
+
 switch() {
-  current_branch=$(git branch | grep '*' | cut -d ' ' -f 2)
   new_branch=$2
-  current_branch_id=$(cat config.yml | grep "theme_id" | cut -d '"' -f 2)
   new_branch_id=$(cat atk.conf | grep "$new_branch" | cut -d '=' -f 2)
+  current_branch=$(git branch | grep '*' | cut -d ' ' -f 2)
+  current_branch_id=$(cat config.yml | grep "theme_id" | cut -d '"' -f 2)
+
+  # Switch to branch
   git checkout $new_branch
+
+  # If var current_branch_id is empty
   if [ $current_branch_id -z ]; then
+    # Pull from atk.conf instead of config.yml
     current_branch_id=$(cat atk.conf | grep "$current_branch" | cut -d '=' -f 2)
+    # Replace empty ID in config.yml
     sed -i "s/\"\"/\"$current_branch_id\"/g" config.yml
   elif [ "$current_branch_id" != "$new_branch_id" ]; then
+    # Replace theme ID in config.yml
     sed -i "s/$current_branch_id/$new_branch_id/g" config.yml
   fi
 }
 
+
 watch() {
+  # Pull any changes
   git pull
+  # Use theme watch to update theme with any changes changes
   theme watch
+  # Wait until user cancels because theme watch runs as a background process
   wait
+  # Add all changes, commit, and push
   git add *
   echo
   read -r -p "Commit message: " message
@@ -185,9 +218,12 @@ watch() {
   git push
 }
 
-merge() {
-  switch "$@"
 
+merge() {
+  # Switch to branch that changes are being merged into
+  switch _ $2
+
+  # Git merge and wait for merge conflicts to be fixed
   if git merge $3 | grep -q 'fix conflicts'; then
     read -r -p "Continue once you fix conflicts... " response
   fi
