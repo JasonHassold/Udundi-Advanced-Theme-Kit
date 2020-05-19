@@ -145,7 +145,7 @@ branch() {
       # Delete remote branch
       git push origin --delete $name
       # Remove atk.conf branch line
-      sed "/$name=/d" atk.conf
+      echo "$(sed "/$name=/d" atk.conf)" > atk.conf
       # Prompts user to delete theme
       read -r -p "Removed branch theme '$new_theme_name' (press any key to confirm)... " response
     else
