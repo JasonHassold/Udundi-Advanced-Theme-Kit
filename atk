@@ -183,22 +183,29 @@ branch() {
 
 switch() {
   new_branch=$2
-  new_branch_id=$(cat atk.conf | grep "$new_branch" | cut -d '=' -f 2)
-  current_branch=$(git branch | grep '*' | cut -d ' ' -f 2)
-  current_branch_id=$(cat config.yml | grep "theme_id" | cut -d '"' -f 2)
 
-  # Switch to branch
-  git checkout $new_branch
+  # If new_branch is a branch
+  if [[ $(git branch | tr '*' ' ') == *"$new_branch"* ]]; then
 
-  # If var current_branch_id is empty
-  if [ $current_branch_id -z ]; then
-    # Pull from atk.conf instead of config.yml
-    current_branch_id=$(cat atk.conf | grep "$current_branch" | cut -d '=' -f 2)
-    # Replace empty ID in config.yml
-    sed -i "s/\"\"/\"$current_branch_id\"/g" config.yml
-  elif [ "$current_branch_id" != "$new_branch_id" ]; then
-    # Replace theme ID in config.yml
-    sed -i "s/$current_branch_id/$new_branch_id/g" config.yml
+    new_branch_id=$(cat atk.conf | grep "$new_branch" | cut -d '=' -f 2)
+    current_branch=$(git branch | grep '*' | cut -d ' ' -f 2)
+    current_branch_id=$(cat config.yml | grep "theme_id" | cut -d '"' -f 2)
+
+    # Switch to branch
+    git checkout $new_branch
+
+    # If var current_branch_id is empty
+    if [ -z $current_branch_id ]; then
+      # Pull from atk.conf instead of config.yml
+      current_branch_id=$(cat atk.conf | grep "$current_branch" | cut -d '=' -f 2)
+      # Replace empty ID in config.yml
+      sed -i "s/\"\"/\"$current_branch_id\"/g" config.yml
+    elif [ "$current_branch_id" != "$new_branch_id" ]; then
+      # Replace theme ID in config.yml
+      sed -i "s/$current_branch_id/$new_branch_id/g" config.yml
+    fi
+  else
+    echo "Not a branch"
   fi
 }
 
