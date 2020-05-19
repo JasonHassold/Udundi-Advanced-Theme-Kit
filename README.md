@@ -6,7 +6,7 @@
 sudo ln -s {{ full current directory }}/atk /usr/bin/atk
 ```
 
-### Usage: 
+### Usage:
 
 ```atk {command} {options}```
 
@@ -14,6 +14,11 @@ sudo ln -s {{ full current directory }}/atk /usr/bin/atk
 
    * **Setup:** ```atk setup {store ex. advanced-theme-kit-tester.myshopify.com} {password}```
 
+   * **Get:** ```atk get {github repo URL} {store ex. advanced-theme-kit-tester.myshopify.com} {password}```
+
+   * **Sync:** ```atk sync```
+
+   * **List Branches:** ```atk branch```
    * **Create Branch:** ```atk branch {branch name}```
    * **Delete Branch:** ```atk branch {branch name} delete```
 

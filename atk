@@ -11,6 +11,9 @@ usage() {
   echo -e "   \e[33mGet\e[39m: \e[96mget\e[39m {github repo URL} {store ex. advanced-theme-kit-tester.myshopify.com} {password}"
   echo -e "      \e[90m-gets an existing repository\e[39m"
   echo
+  echo -e "   \e[33mSync\e[39m: \e[96msync\e[39m"
+  echo -e "      \e[90m-syncs any new remote branches\e[39m"
+  echo
   echo -e "   \e[33mList Branches\e[39m: \e[96mbranch\e[39m"
   echo -e "   \e[33mCreate Branch\e[39m: \e[96mbranch\e[39m {branch name}"
   echo -e "   \e[33mDelete Branch\e[39m: \e[96mbranch\e[39m {branch name} delete"
@@ -29,7 +32,7 @@ setup() {
   cd $folder
 
   theme_list=$(theme get --list -s="$2" -p="$3")
-  master_theme_id=$(echo $theme_list | grep "[live]" | cut -d ']' -f 1 | cut -d '[' -f 2)
+  master_theme_id=$(echo $theme_list | grep "\[live\]" | cut -d ']' -f 1 | cut -d '[' -f 2)
   #read -r -p "Theme id (master branch): " theme_id
   theme get -t=$master_theme_id -s="$2" -p="$3"
   wait
@@ -66,8 +69,8 @@ get() {
   echo '.gitignore' >> .gitignore
 
   theme_list=$(theme get --list -s=$3 -p=$4)
-  mater_theme_name=$(echo $theme_list | grep "[live]" | rev | cut -d ']' -f 1 | rev)
-  master_theme_id=$(echo $theme_list | grep "[live]" | cut -d ']' -f 1 | cut -d '[' -f 2)
+  mater_theme_name=$(echo $theme_list | grep "\[live\]" | rev | cut -d ']' -f 1 | rev)
+  master_theme_id=$(echo $theme_list | grep "\[live\]" | cut -d ']' -f 1 | cut -d '[' -f 2)
 
   echo "master=$master_theme_id" > atk.conf
 
@@ -81,6 +84,32 @@ get() {
   done
 
   theme configure -s=$3 -p=$4 -t=$master_theme_id
+}
+
+sync() {
+  switch _ master
+
+  git pull
+
+  local_branches=$(git branch --all -vv | grep -v "master" | grep -v "remotes" | cut -d ' ' -f 3)
+  remote_branches=$(git branch --all -vv | grep -v "master" | grep  "remotes" | cut -d ' ' -f 3 | cut -d '/' -f 3)
+
+  store=$(cat config.yml | grep "store" | cut -d ' ' -f 4)
+  pass=$(cat config.yml | grep "password" | cut -d ' ' -f 4)
+
+  theme_list=$(theme get --list -s="$store" -p="$pass")
+  mater_theme_name=$(echo $theme_list | grep "\[live\]" | rev | cut -d ']' -f 1 | rev)
+
+  echo "$remote_branches" | while read branch; do
+    if [[ ! "${local_branches[@]}" =~ "${branch}" ]]; then
+      git branch --track "$branch" "origin/$branch"
+    fi
+    if [[ ! $(cat atk.conf) =~ "${branch}" ]]; then
+      id=$(echo "$theme_list" | grep "$master_theme_name - $branch" | cut -d ']' -f 1 | cut -d '[' -f 2)
+
+      echo "$branch=$id" >> atk.conf
+    fi
+  done
 }
 
 branch() {
@@ -120,9 +149,6 @@ branch() {
         echo "$name=$new_theme_id" >> atk.conf
         ed -i "s/$theme_id/$new_theme_id/g" config.yml
         sed -i "s/$theme_id/$new_theme_id/g" config.yml
-        # cd ..
-        # cp temptheme/config.yml config.yml
-        # rm -r temptheme/
 
         git add *
         git commit -m "Created new theme branch '$new_theme_name'"
@@ -137,10 +163,13 @@ branch() {
 switch() {
   current_branch=$(git branch | grep '*' | cut -d ' ' -f 2)
   new_branch=$2
-  current_branch_id=$(cat config.yml | grep theme_id | cut -d '"' -f 2)
-  new_branch_id=$(cat atk.conf | grep $new_branch | cut -d '=' -f 2)
+  current_branch_id=$(cat config.yml | grep "theme_id" | cut -d '"' -f 2)
+  new_branch_id=$(cat atk.conf | grep "$new_branch" | cut -d '=' -f 2)
   git checkout $new_branch
-  if [ "$current_branch_id" != "$new_branch_id" ]; then
+  if [ $current_branch_id -z ]; then
+    current_branch_id=$(cat atk.conf | grep "$current_branch" | cut -d '=' -f 2)
+    sed -i "s/\"\"/\"$current_branch_id\"/g" config.yml
+  elif [ "$current_branch_id" != "$new_branch_id" ]; then
     sed -i "s/$current_branch_id/$new_branch_id/g" config.yml
   fi
 }
@@ -178,6 +207,9 @@ case "$1" in
     ;;
   get)
     get "$@"
+    ;;
+  sync)
+    sync "$@"
     ;;
   branch)
     branch "$@"
