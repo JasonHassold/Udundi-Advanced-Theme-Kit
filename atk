@@ -6,10 +6,14 @@ usage() {
   echo " Commands:"
   echo
   echo -e "   \e[33mSetup\e[39m: \e[96msetup\e[39m {store ex. advanced-theme-kit-tester.myshopify.com} {password}"
-  echo -e "      \e[90m-downloads live theme and sets up github repository with the live theme as the master branch\e[39m"
+  echo -e "            \e[90m-downloads live theme and sets up github repository with the live theme as the master branch\e[39m"
+  echo -e "          \e[96msetup\e[39m {store ex. advanced-theme-kit-tester.myshopify.com} {password} select"
+  echo -e "            \e[90m-downloads selected theme and sets up github repository with the selected theme as the master branch\e[39m"
   echo
   echo -e "   \e[33mGet\e[39m: \e[96mget\e[39m {github repo URL} {store ex. advanced-theme-kit-tester.myshopify.com} {password}"
-  echo -e "      \e[90m-gets an existing repository\e[39m"
+  echo -e "          \e[90m-gets an existing repository with live theme as master\e[39m"
+  echo -e "        \e[96mget\e[39m {github repo URL} {store ex. advanced-theme-kit-tester.myshopify.com} {password} select"
+  echo -e "          \e[90m-gets an existing repository with selected theme as master\e[39m"
   echo
   echo -e "   \e[33mSync\e[39m: \e[96msync\e[39m"
   echo -e "      \e[90m-syncs any new remote branches\e[39m"
@@ -33,9 +37,16 @@ setup() {
   mkdir $folder
   cd $folder
 
-  # Get live theme
-  theme_list=$(theme get --list -s="$2" -p="$3")
-  master_theme_id=$(echo $theme_list | grep "\[live\]" | cut -d ']' -f 1 | cut -d '[' -f 2)
+  if [ $4 == "select" ]; then
+    # Lists themes and asks for theme ID
+    theme get --list -s="$2" -p="$3"
+    read -r -p "Theme ID to use as master: " master_theme_id
+  else
+    # Get live theme ID
+    theme_list=$(theme get --list -s="$2" -p="$3")
+    master_theme_id=$(echo $theme_list | grep "\[live\]" | cut -d ']' -f 1 | cut -d '[' -f 2)
+  fi
+  # Download theme
   theme get -t=$master_theme_id -s="$2" -p="$3"
   wait
 
@@ -98,10 +109,18 @@ get() {
   echo 'atk.conf' >> .gitignore
   echo '.gitignore' >> .gitignore
 
-  # Get master theme name and id
-  theme_list=$(theme get --list -s=$3 -p=$4)
-  mater_theme_name=$(echo $theme_list | grep "\[live\]" | rev | cut -d ']' -f 1 | rev)
-  master_theme_id=$(echo $theme_list | grep "\[live\]" | cut -d ']' -f 1 | cut -d '[' -f 2)
+  # Get theme list
+  theme_list=$(theme get --list -s="$3" -p="$4")
+  if [ $4 == "select" ]; then
+    # Lists themes and asks for theme ID
+    echo "$theme_list"
+    read -r -p "Theme ID to use as master: " master_theme_id
+    master_theme_name=$(echo $theme_list | grep "$master_theme_id" | rev | cut -d ']' -f 1 | rev)
+  else
+    # Get live theme name and ID
+    mater_theme_name=$(echo $theme_list | grep "\[live\]" | rev | cut -d ']' -f 1 | rev)
+    master_theme_id=$(echo $theme_list | grep "\[live\]" | cut -d ']' -f 1 | cut -d '[' -f 2)
+  fi
 
   # Create atk.conf - this file is used to store branch theme IDs
   echo "master=$master_theme_id" > atk.conf
