@@ -67,7 +67,7 @@ setup() {
   read -r -p "Github username or org: " git_user
   read -r -p "New repo name: " repo_name
   git remote add origin https://github.com/$git_user/$(echo $repo_name | tr ' ' '-').git
-  read -r -p "Add repository on github with the same name (press any key when done)... " response
+  read -r -p "Add repository on github with the same name (press enter when done)... " response
   git push -u origin master
 }
 
@@ -166,7 +166,7 @@ branch() {
       # Remove atk.conf branch line
       echo "$(sed "/$name=/d" atk.conf)" > atk.conf
       # Prompts user to delete theme
-      read -r -p "Removed branch theme '$new_theme_name' (press any key to confirm)... " response
+      read -r -p "Removed branch theme '$new_theme_name' (press enter to confirm)... " response
     else
       # Create git branch
       git branch "$name"
@@ -244,7 +244,7 @@ watch() {
     # Add all changes, commit, and push
     git add *
     echo
-    read -r -p "Commit message: " message
+    read -r -p "$(echo -e "\e[95mCommit message: \e[39m")" message
     git commit -m "$message"
     git push
   fi
@@ -252,17 +252,24 @@ watch() {
 
 
 merge() {
-  # Switch to branch that changes are being merged into
-  switch _ $2
+  if [ "$2" == "watch" ]; then
+    echo -e "\e[91mWait for all file changes to be update!\e[39m"
+    theme watch
+  else
+    read -r -p "\e[33mAs a precaution you might want to duplicate the master theme (press enter to continue)... \e[39m" response
 
-  # Git merge and wait for merge conflicts to be fixed
-  if git merge $3 | grep -q 'fix conflicts'; then
-    read -r -p "Continue once you fix conflicts... " response
+    # Switch to branch that changes are being merged into
+    switch _ $2
+
+    read -r -p "Run 'atk merge watch' in another tab (press enter to continue)... " response
+
+    # Git merge and wait for merge conflicts to be fixed
+    if git merge $3 | grep -q 'fix conflicts'; then
+      read -r -p "\e[33mContinue once you fix conflicts... \e[39m" response
+    fi
+
+    git push
   fi
-
-  git push
-
-  theme deploy
 }
 
 
