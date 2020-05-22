@@ -34,6 +34,8 @@ usage() {
 setup() {
   # Create folder and move into it
   read -r -p "Folder name: " folder
+  folder=${folder// /-}
+  folder=${folder//[^a-zA-Z0-9-]/}
   mkdir $folder
   cd $folder
 
