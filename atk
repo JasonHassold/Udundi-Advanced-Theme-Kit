@@ -256,7 +256,7 @@ merge() {
     echo -e "\e[91mWait for all file changes to be update!\e[39m"
     theme watch
   else
-    read -r -p "\e[33mAs a precaution you might want to duplicate the master theme (press enter to continue)... \e[39m" response
+    read -r -p "$(echo -e "\e[33mAs a precaution you might want to duplicate the master theme (press enter to continue)... \e[39m")" response
 
     # Switch to branch that changes are being merged into
     switch _ $2
@@ -265,7 +265,7 @@ merge() {
 
     # Git merge and wait for merge conflicts to be fixed
     if git merge $3 | grep -q 'fix conflicts'; then
-      read -r -p "\e[33mContinue once you fix conflicts... \e[39m" response
+      read -r -p "$(echo -e "\e[33mContinue once you fix conflicts... \e[39m")" response
     fi
 
     git push
