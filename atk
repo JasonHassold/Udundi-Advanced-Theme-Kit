@@ -44,10 +44,10 @@ setup() {
   else
     # Get live theme ID
     theme_list=$(theme get --list -s="$2" -p="$3")
-    master_theme_id=$(echo $theme_list | grep "\[live\]" | cut -d ']' -f 1 | cut -d '[' -f 2)
+    master_theme_id=$(echo "$theme_list" | grep "\[live\]" | cut -d ']' -f 1 | cut -d '[' -f 2)
   fi
   # Download theme
-  theme get -t=$master_theme_id -s="$2" -p="$3"
+  theme get -t="$master_theme_id" -s="$2" -p="$3"
   wait
 
   # Initialize repo
@@ -82,7 +82,7 @@ initBranchTracking() {
   store=$(cat config.yml | grep "store" | cut -d ' ' -f 4)
   pass=$(cat config.yml | grep "password" | cut -d ' ' -f 4)
   theme_list=$(theme get --list -s="$store" -p="$pass")
-  mater_theme_name=$(echo $theme_list | grep "\[live\]" | cut -d ' ' -f 4-)
+  mater_theme_name=$(echo "$theme_list" | grep "\[live\]" | cut -d ' ' -f 4-)
 
   echo "$remote_branches" | while read branch; do
     if [[ ! "${local_branches[@]}" =~ "${branch}" ]]; then
@@ -115,18 +115,18 @@ get() {
     # Lists themes and asks for theme ID
     echo "$theme_list"
     read -r -p "Theme ID to use as master: " master_theme_id
-    master_theme_name=$(echo $theme_list | grep "$master_theme_id" | cut -d ' ' -f 4-)
+    master_theme_name=$(echo "$theme_list" | grep "$master_theme_id" | cut -d ' ' -f 4-)
   else
     # Get live theme name and ID
-    mater_theme_name=$(echo $theme_list | grep "\[live\]" | cut -d ' ' -f 4-)
-    master_theme_id=$(echo $theme_list | grep "\[live\]" | cut -d ']' -f 1 | cut -d '[' -f 2)
+    mater_theme_name=$(echo "$theme_list" | grep "\[live\]" | cut -d ' ' -f 4-)
+    master_theme_id=$(echo "$theme_list" | grep "\[live\]" | cut -d ']' -f 1 | cut -d '[' -f 2)
   fi
 
   # Create atk.conf - this file is used to store branch theme IDs
   echo "master=$master_theme_id" > atk.conf
 
   # Set up config file for master theme
-  theme configure -s=$3 -p=$4 -t=$master_theme_id
+  theme configure -s="$3" -p="$4" -t="$master_theme_id"
 
   initBranchTracking
 }
@@ -155,7 +155,7 @@ branch() {
     store=$(cat config.yml | grep store | cut -d ' ' -f 4)
     pass=$(cat config.yml | grep password | cut -d ' ' -f 4)
     master_theme_id=$(cat atk.conf | grep "master" | cut -d '=' -f 2)
-    master_theme_name=$(theme get --list -s=$store -p=$pass | grep $master_theme_id | cut -d ' ' -f 4-)
+    master_theme_name=$(theme get --list -s="$store" -p="$pass" | grep $master_theme_id | cut -d ' ' -f 4-)
     new_theme_name="$master_theme_name - $name"
 
     if [ "$3" == 'delete' ]; then
@@ -177,7 +177,7 @@ branch() {
         cd temptheme
 
         # Generate new theme in folder
-        theme new --name="$new_theme_name" -s=$store -p=$pass
+        theme new --name="$new_theme_name" -s="$store" -p="$pass"
         wait
 
         # Get new theme ID and remove temp theme folder
