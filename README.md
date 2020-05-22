@@ -1,4 +1,4 @@
-# Udundi-Advanced-Theme-Kit
+# Advanced-Theme-Kit
 
 ### Setup
 
