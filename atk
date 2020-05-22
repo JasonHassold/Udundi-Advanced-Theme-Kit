@@ -111,7 +111,7 @@ get() {
 
   # Get theme list
   theme_list=$(theme get --list -s="$3" -p="$4")
-  if [ $4 == "select" ]; then
+  if [ "$4" == "select" ]; then
     # Lists themes and asks for theme ID
     echo "$theme_list"
     read -r -p "Theme ID to use as master: " master_theme_id
