@@ -37,7 +37,7 @@ setup() {
   mkdir $folder
   cd $folder
 
-  if [ $4 == "select" ]; then
+  if [ "$4" == "select" ]; then
     # Lists themes and asks for theme ID
     theme get --list -s="$2" -p="$3"
     read -r -p "Theme ID to use as master: " master_theme_id
