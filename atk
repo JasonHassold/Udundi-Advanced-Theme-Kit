@@ -31,26 +31,38 @@ usage() {
 }
 
 
-setup() {
-  # Create folder and move into it
-  read -r -p "Folder name: " folder
-  folder=${folder// /-}
-  folder=${folder//[^a-zA-Z0-9-]/}
-  mkdir $folder
-  cd $folder
+done=true
 
-  if [ "$4" == "select" ]; then
+
+setup() {
+  done=false
+
+  # Check if you are in a theme folder
+  if test -f "config.yml"; then
     # Lists themes and asks for theme ID
-    theme get --list -s="$2" -p="$3"
-    read -r -p "Theme ID to use as master: " master_theme_id
+    master_theme_id=$(cat config.yml | grep 'theme_id' | cut -d '"' -f 2)
+    read -r -p "You are in a theme folder, using theme ID from config.yml file... " response
   else
-    # Get live theme ID
-    theme_list=$(theme get --list -s="$2" -p="$3")
-    master_theme_id=$(echo "$theme_list" | grep "\[live\]" | cut -d ']' -f 1 | cut -d '[' -f 2)
+    # Create folder and move into it
+    read -r -p "Folder name: " folder
+    folder=${folder// /-}
+    folder=${folder//[^a-zA-Z0-9-]/}
+    mkdir $folder
+    cd $folder
+
+    if [ "$4" == "select" ]; then
+      # Lists themes and asks for theme ID
+      theme get --list -s="$2" -p="$3"
+      read -r -p "Theme ID to use as master: " master_theme_id
+    else
+      # Get live theme ID
+      theme_list=$(theme get --list -s="$2" -p="$3")
+      master_theme_id=$(echo "$theme_list" | grep "\[live\]" | cut -d ']' -f 1 | cut -d '[' -f 2)
+    fi
+    # Download theme
+    theme get -t="$master_theme_id" -s="$2" -p="$3"
+    wait
   fi
-  # Download theme
-  theme get -t="$master_theme_id" -s="$2" -p="$3"
-  wait
 
   # Initialize repo
   git init
@@ -71,7 +83,20 @@ setup() {
   git remote add origin https://github.com/$git_user/$(echo $repo_name | tr ' ' '-').git
   read -r -p "Add repository on github with the same name (press enter when done)... " response
   git push -u origin master
+
+  done=true
 }
+
+
+setupCleanup() {
+  rm -rf .git
+  rm .gitignore
+  rm atk.conf
+  echo
+  echo -e "\e[91mCleaning up\e[39m"
+  read -r -p "$(echo -e "\e[91mRemove repository from github if created (press enter when done)... \e[39m")" response
+}
+
 
 
 # Used by get() and sync()
@@ -97,6 +122,7 @@ initBranchTracking() {
     fi
   done
 }
+
 
 
 get() {
@@ -134,13 +160,17 @@ get() {
 }
 
 
+
 sync() {
   switch _ master
 
   git pull
 
   initBranchTracking
+
+  git pull --all
 }
+
 
 
 branch() {
@@ -203,6 +233,7 @@ branch() {
 }
 
 
+
 switch() {
   new_branch=$2
 
@@ -232,9 +263,30 @@ switch() {
 }
 
 
+
+# $1 = branch receiving merge
+# $2 = branch being merged
+mergeHelper() {
+  read -r -p "$(echo -e "\e[91mMake sure 'atk merge watch' is fully running or switches... \e[39m")" response
+
+  switch _ $1
+
+  # Git merge and wait for merge conflicts to be fixed
+  if git merge $2 | grep -q 'fix conflicts'; then
+    git status
+    read -r -p "$(echo -e "\e[33mContinue once you fix conflicts... \e[39m")" response
+    git add *
+    git commit -m "Fix merge"
+  fi
+
+  git push
+}
+
+
+
 watch() {
   # Pull any changes
-  git pull
+  git pull --all
   # Provides link to preview
   theme open
   # Use theme watch to update theme with any changes changes
@@ -253,6 +305,31 @@ watch() {
 }
 
 
+# merge() {
+#   if [ "$2" == "watch" ]; then
+#     echo -e "\e[91mWait for all file changes to be update!\e[39m"
+#     theme watch
+#   else
+#     read -r -p "$(echo -e "\e[33mAs a precaution you might want to duplicate the master theme (press enter to continue)... \e[39m")" response
+#
+#     # Switch to branch that changes are being merged into
+#     switch _ $2
+#
+#     read -r -p "Run 'atk merge watch' in another tab (press enter to continue)... " response
+#
+#     # Git merge and wait for merge conflicts to be fixed
+#     if git merge $3 | grep -q 'fix conflicts'; then
+#       read -r -p "$(echo -e "\e[33mContinue once you fix conflicts... \e[39m")" response
+#       git add *
+#       git commit -m "Fix merge"
+#     fi
+#
+#     git push
+#   fi
+# }
+
+
+
 merge() {
   if [ "$2" == "watch" ]; then
     echo -e "\e[91mWait for all file changes to be update!\e[39m"
@@ -260,21 +337,32 @@ merge() {
   else
     read -r -p "$(echo -e "\e[33mAs a precaution you might want to duplicate the master theme (press enter to continue)... \e[39m")" response
 
-    # Switch to branch that changes are being merged into
-    switch _ $2
+    switch _ master
 
-    read -r -p "Run 'atk merge watch' in another tab (press enter to continue)... " response
+    git pull
 
-    # Git merge and wait for merge conflicts to be fixed
-    if git merge $3 | grep -q 'fix conflicts'; then
-      read -r -p "$(echo -e "\e[33mContinue once you fix conflicts... \e[39m")" response
-      git add *
-      git commit -m "Fix merge"
-    fi
+    mergeHelper $2 master
 
-    git push
+    mergeHelper master $2
   fi
 }
+
+
+
+# Used to cleanup if exited early
+cleanup() {
+  if [ "$done" = "false" ]; then
+    case "$1" in
+      setup)
+        setupCleanup "$@"
+        ;;
+    esac
+  fi
+}
+
+
+# On exit run cleanup()
+trap 'cleanup "$@"' err exit
 
 
 case "$1" in
