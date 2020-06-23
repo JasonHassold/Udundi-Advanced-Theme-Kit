@@ -26,7 +26,7 @@ usage() {
   echo
   echo -e "   \e[33mWatch\e[39m: \e[96mwatch\e[39m"
   echo
-  echo -e "   \e[33mMerge\e[39m: \e[96mmerge\e[39m {branch to merge into} {branch being merged}"
+  echo -e "   \e[33mMerge\e[39m: \e[96mmerge\e[39m {this branch} {into this branch}"
   echo
 }
 
@@ -266,21 +266,21 @@ switch() {
 
 # $1 = branch receiving merge
 # $2 = branch being merged
-mergeHelper() {
-  read -r -p "$(echo -e "\e[91mMake sure 'atk merge watch' is fully running or switches... \e[39m")" response
-
-  switch _ $1
-
-  # Git merge and wait for merge conflicts to be fixed
-  if git merge $2 | grep -q 'fix conflicts'; then
-    git status
-    read -r -p "$(echo -e "\e[33mContinue once you fix conflicts... \e[39m")" response
-    git add *
-    git commit -m "Fix merge"
-  fi
-
-  git push
-}
+# mergeHelper() {
+#   switch _ $1
+#
+#   read -r -p "$(echo -e "\e[91mMake sure 'atk merge watch' is fully running or switches... \e[39m")" response
+#
+#   # Git merge and wait for merge conflicts to be fixed
+#   if git merge $2 | grep -q 'fix conflicts'; then
+#     git status
+#     read -r -p "$(echo -e "\e[33mContinue once you fix conflicts... \e[39m")" response
+#     git add *
+#     git commit -m "Fix merge"
+#   fi
+#
+#   git push
+# }
 
 
 
@@ -305,31 +305,6 @@ watch() {
 }
 
 
-# merge() {
-#   if [ "$2" == "watch" ]; then
-#     echo -e "\e[91mWait for all file changes to be update!\e[39m"
-#     theme watch
-#   else
-#     read -r -p "$(echo -e "\e[33mAs a precaution you might want to duplicate the master theme (press enter to continue)... \e[39m")" response
-#
-#     # Switch to branch that changes are being merged into
-#     switch _ $2
-#
-#     read -r -p "Run 'atk merge watch' in another tab (press enter to continue)... " response
-#
-#     # Git merge and wait for merge conflicts to be fixed
-#     if git merge $3 | grep -q 'fix conflicts'; then
-#       read -r -p "$(echo -e "\e[33mContinue once you fix conflicts... \e[39m")" response
-#       git add *
-#       git commit -m "Fix merge"
-#     fi
-#
-#     git push
-#   fi
-# }
-
-
-
 merge() {
   if [ "$2" == "watch" ]; then
     echo -e "\e[91mWait for all file changes to be update!\e[39m"
@@ -337,15 +312,40 @@ merge() {
   else
     read -r -p "$(echo -e "\e[33mAs a precaution you might want to duplicate the master theme (press enter to continue)... \e[39m")" response
 
-    switch _ master
+    # Switch to branch that changes are being merged into
+    switch _ $3
 
-    git pull
+    read -r -p "Run 'atk merge watch' in another tab (press enter to continue)... " response
 
-    mergeHelper $2 master
+    # Git merge and wait for merge conflicts to be fixed
+    if git merge $2 | grep -q 'fix conflicts'; then
+      read -r -p "$(echo -e "\e[33mContinue once you fix conflicts... \e[39m")" response
+      git add *
+      git commit -m "Fix merge"
+    fi
 
-    mergeHelper master $2
+    git push
   fi
 }
+
+
+
+# merge() {
+#   if [ "$2" == "watch" ]; then
+#     echo -e "\e[91mWait for all file changes to be update!\e[39m"
+#     theme watch
+#   else
+#     read -r -p "$(echo -e "\e[33mAs a precaution you might want to duplicate the master theme (press enter to continue)... \e[39m")" response
+#
+#     switch _ master
+#
+#     git pull
+#
+#     mergeHelper $2 master
+#
+#     mergeHelper master $2
+#   fi
+# }
 
 
 
