@@ -256,7 +256,7 @@ switch() {
     fi
 
     # Switch to branch
-    git checkout $new_branch  
+    git checkout $new_branch
   else
     echo "Not a branch"
   fi
@@ -286,7 +286,7 @@ switch() {
 
 watch() {
   # Pull any changes
-  git pull --all
+  git pull
   # Provides link to preview
   theme open
   # Use theme watch to update theme with any changes changes
@@ -306,7 +306,7 @@ watch() {
 
 
 merge() {
-  git pull --all
+  git pull
   if [ "$2" == "watch" ]; then
     echo -e "\e[91mWait for all file changes to be update!\e[39m"
     theme watch
@@ -315,6 +315,8 @@ merge() {
 
     # Switch to branch that changes are being merged into
     switch _ $3
+
+    git pull
 
     read -r -p "Run 'atk merge watch' in another tab (press enter to continue)... " response
 
