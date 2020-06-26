@@ -323,7 +323,7 @@ merge() {
 
     git pull
 
-    read -r -p "Run '\e[91matk merge watch\e[39m' in another tab (press enter to continue)... " response
+    read -r -p "$(echo -e "Run '\e[91matk merge watch\e[39m' in another tab (press enter to continue)... ")" response
 
     # Git merge and wait for merge conflicts to be fixed
     if git merge $2 | grep -q 'fix conflicts'; then
