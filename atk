@@ -244,9 +244,6 @@ switch() {
     current_branch=$(git branch | grep '*' | cut -d ' ' -f 2)
     current_branch_id=$(cat config.yml | grep "theme_id" | cut -d '"' -f 2)
 
-    # Switch to branch
-    git checkout $new_branch
-
     # If var current_branch_id is empty
     if [ -z $current_branch_id ]; then
       # Pull from atk.conf instead of config.yml
@@ -257,6 +254,9 @@ switch() {
       # Replace theme ID in config.yml
       sed -i "s/$current_branch_id/$new_branch_id/g" config.yml
     fi
+
+    # Switch to branch
+    git checkout $new_branch  
   else
     echo "Not a branch"
   fi
@@ -306,6 +306,7 @@ watch() {
 
 
 merge() {
+  git pull --all
   if [ "$2" == "watch" ]; then
     echo -e "\e[91mWait for all file changes to be update!\e[39m"
     theme watch
